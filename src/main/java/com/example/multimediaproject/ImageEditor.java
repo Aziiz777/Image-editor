@@ -136,7 +136,6 @@ public class ImageEditor extends Application {
 
         // Create the color palette sub-scene
         Group colorPaletteGroup = new Group();
-        // Declare the SubScene and Group
         SubScene colorPaletteSubScene = new SubScene(colorPaletteGroup, 400, 400);
         colorPaletteSubScene.setFill(Color.WHITE);
         colorPaletteSubScene.setManaged(false);
@@ -227,7 +226,6 @@ public class ImageEditor extends Application {
                 }
             }
         }
-
         return uniqueColors.size();
     }
 
@@ -283,86 +281,46 @@ public class ImageEditor extends Application {
 
     private void displayHistogramChart(Stage primaryStage, int[][][] histogram) {
 
-        java.awt.Color[] colors = Utils.transformIntoColors(histogram);
-
-        NumberAxis xAxis = new NumberAxis();
-        xAxis.setLabel("values");
-
+        NumberAxis xAxis = new NumberAxis(0,260,5);
+        xAxis.setLabel("Color Values");
         NumberAxis yAxis = new NumberAxis();
-        yAxis.setLabel("pixels number");
+        yAxis.setLabel("Pixels Number");
 
-        AreaChart<Number, Number> redChart = new AreaChart<>(xAxis, yAxis);
-        redChart.setTitle("Red Histogram");
+        LineChart<Number, Number> charts = new LineChart<>(xAxis, yAxis);
+        charts.setCreateSymbols(false);
+        charts.setTitle("Color Histogram");
         XYChart.Series<Number, Number> redSeries = new XYChart.Series<>();
-        for (int i = 0; i < colors.length; i++) {
-            redSeries.getData().add(new XYChart.Data<>(i, colors[i].getRed()));
-        }
-        redChart.getData().add(redSeries);
-
-        LineChart<Number, Number> greenChart = new LineChart<>(xAxis, yAxis);
-        greenChart.setTitle("Green Histogram");
         XYChart.Series<Number, Number> greenSeries = new XYChart.Series<>();
-        for (int i = 0; i < colors.length; i++) {
-            greenSeries.getData().add(new XYChart.Data<>(i, colors[i].getGreen()));
-        }
-        greenChart.getData().add(greenSeries);
-
-        LineChart<Number, Number> blueChart = new LineChart<>(xAxis, yAxis);
-        blueChart.setTitle("Blue Histogram");
         XYChart.Series<Number, Number> blueSeries = new XYChart.Series<>();
-        for (int i = 0; i < colors.length; i++) {
-            blueSeries.getData().add(new XYChart.Data<>(i, colors[i].getBlue()));
+
+        for (int r = 0; r < histogram.length; r++) {
+            for (int g = 0; g < histogram[r].length; g++) {
+                for (int b = 0; b < histogram[r][g].length; b++) {
+                    int count = histogram[r][g][b];
+                    if (count > 0) {
+                        redSeries.getData().add(new XYChart.Data<>(r, count));
+                        greenSeries.getData().add(new XYChart.Data<>(g, count));
+                        blueSeries.getData().add(new XYChart.Data<>(b, count));
+                    }
+                }
+            }
         }
-        blueChart.getData().add(blueSeries);
+
+        charts.getData().add(redSeries);
+        charts.getData().add(greenSeries);
+        charts.getData().add(blueSeries);
+        charts.setLegendVisible(false);
+        redSeries.getNode().setStyle("-fx-stroke: #ff0000;");
+        greenSeries.getNode().setStyle("-fx-stroke: #00ff00; color: green;");
+        blueSeries.getNode().setStyle("-fx-stroke: #0000ff; color: blue;");
 
         Stage chartStage = new Stage();
         chartStage.initOwner(primaryStage);
         chartStage.setTitle("Histogram Chart");
-        VBox allCharts = new VBox(redChart, greenChart, blueChart);
-        Scene chartScene = new Scene(allCharts, 800, 600);
+        Scene chartScene = new Scene(charts, 800, 600);
         chartStage.setScene(chartScene);
         chartStage.show();
 
     }
-
-    //    private void displayHistogramChart(Stage primaryStage, int[][][] histogram) {
-//        Stage chartStage = new Stage();
-//        chartStage.initOwner(primaryStage);
-//        chartStage.setTitle("Histogram Chart");
-//
-//        CategoryAxis xAxis = new CategoryAxis();
-//        NumberAxis yAxis = new NumberAxis();
-//        BarChart<String, Number> histogramChart = new BarChart<>(xAxis, yAxis);
-//        histogramChart.setTitle("Color Histogram");
-//        xAxis.setLabel("Color");
-//        yAxis.setLabel("Count");
-//
-//        XYChart.Series<String, Number> redSeries = new XYChart.Series<>();
-//        redSeries.setName("Red");
-//        XYChart.Series<String, Number> greenSeries = new XYChart.Series<>();
-//        greenSeries.setName("Green");
-//        XYChart.Series<String, Number> blueSeries = new XYChart.Series<>();
-//        blueSeries.setName("Blue");
-//
-//        for (int r = 0; r < histogram.length; r++) {
-//            for (int g = 0; g < histogram[r].length; g++) {
-//                for (int b = 0; b < histogram[r][g].length; b++) {
-//                    int count = histogram[r][g][b];
-//                    if (count > 0) {
-//                        String colorLabel = String.format("#%02X%02X%02X", r, g, b);
-//                        redSeries.getData().add(new XYChart.Data<>(colorLabel, count));
-//                        greenSeries.getData().add(new XYChart.Data<>(colorLabel, count));
-//                        blueSeries.getData().add(new XYChart.Data<>(colorLabel, count));
-//                    }
-//                }
-//            }
-//        }
-//
-//        histogramChart.getData().addAll(redSeries, greenSeries, blueSeries);
-//
-//        Scene chartScene = new Scene(histogramChart, 800, 600);
-//        chartStage.setScene(chartScene);
-//        chartStage.show();
-//    }
 
 }
