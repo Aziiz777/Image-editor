@@ -3,6 +3,8 @@ package com.example.multimediaproject;
 import javafx.util.Pair;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -20,12 +22,20 @@ public class UniformColorQuantization {
 
             //remove .jpg
             path = path.substring(0, path.length() - 4);
+
+            // Convert the quantized image to indexed
+            int[][][] hist = Utils.buildHistogram(quantizedImage);
+            int[] colors = Utils.transformIntoIntColors(hist);
+            IndexColorModel indexedModel = new IndexColorModel(8, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
+            BufferedImage indexedImage = new BufferedImage(quantizedImage.getWidth(), quantizedImage.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, indexedModel);
+            indexedImage.getGraphics().drawImage(quantizedImage, 0, 0, null);
+
             // Save the quantized image
-            ImageIO.write(quantizedImage, "jpg", new File(path + "quantized.jpg"));
+            ImageIO.write(indexedImage, "png", new File(path + "-uni-quantized.png"));
 
             System.out.println("Quantization completed.");
 
-            return new Pair<>(path + "quantized.jpg", quantizedImage);
+            return new Pair<>(path + "-uni-quantized.png", indexedImage);
 
         } catch (IOException e) {
             e.printStackTrace();

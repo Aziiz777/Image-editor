@@ -3,11 +3,12 @@ package com.example.multimediaproject;
 import javafx.util.Pair;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.imageio.ImageIO;
 
 public class MedianCutQuantization {
@@ -17,63 +18,43 @@ public class MedianCutQuantization {
             // Load the image
             BufferedImage image = ImageIO.read(new File(path));
 
-
-
             // Create a flattened array of the image pixels (RGB values and x, y locations)
             List<int[]> flattenedImgArray = new ArrayList<>();
-            for (int rindex = 0; rindex < image.getHeight(); rindex++) {
-                for (int cindex = 0; cindex < image.getWidth(); cindex++) {
-                    int color = image.getRGB(cindex, rindex);
+            for (int rIndex = 0; rIndex < image.getHeight(); rIndex++) {
+                for (int cIndex = 0; cIndex < image.getWidth(); cIndex++) {
+                    int color = image.getRGB(cIndex, rIndex);
                     int r = (color & 0xff0000) >> 16;
                     int g = (color & 0x00ff00) >> 8;
                     int b = (color & 0x0000ff);
-                    flattenedImgArray.add(new int[] {r, g, b, rindex, cindex});
+                    flattenedImgArray.add(new int[]{r, g, b, rIndex, cIndex});
                 }
             }
 
             // Call the splitIntoBuckets function to quantize the image
             splitIntoBuckets(image, flattenedImgArray, 6);
 
-
             //remove .jpg
             path = path.substring(0, path.length() - 4);
-            // Save the quantized image
-            ImageIO.write(image, "jpg", new File(path + "quantized.jpg"));
+
+            // Convert the quantized image to indexed
+            int[][][] hist = Utils.buildHistogram(image);
+            int[] colors = Utils.transformIntoIntColors(hist);
+            IndexColorModel indexedModel = new IndexColorModel(8, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
+            BufferedImage indexedImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, indexedModel);
+            indexedImage.getGraphics().drawImage(image, 0, 0, null);
+
+            // Save the indexed image
+            ImageIO.write(indexedImage, "png", new File(path + "-mc-quantized.png"));
 
             System.out.println("Quantization completed.");
 
-            return new Pair<>(path + "quantized.jpg", image);
+            return new Pair<>(path + "-mc-quantized.png", indexedImage);
 
         } catch (IOException e) {
-            System.out.println("errrror"+e);
             e.printStackTrace();
             return new Pair<>("Quantization failed.", null);
         }
     }
-//    public static void main(String[] args) throws IOException {
-//        // Read in the image
-//        File input = new File("C:\\Users\\Laptop Syria\\Pictures\\girl.jpg");
-//        BufferedImage sampleImg = ImageIO.read(input);
-//
-//        // Create a flattened array of the image pixels (RGB values and x, y locations)
-//        List<int[]> flattenedImgArray = new ArrayList<>();
-//        for (int rindex = 0; rindex < sampleImg.getHeight(); rindex++) {
-//            for (int cindex = 0; cindex < sampleImg.getWidth(); cindex++) {
-//                int color = sampleImg.getRGB(cindex, rindex);
-//                int r = (color & 0xff0000) >> 16;
-//                int g = (color & 0x00ff00) >> 8;
-//                int b = (color & 0x0000ff);
-//                flattenedImgArray.add(new int[] {r, g, b, rindex, cindex});
-//            }
-//        }
-//
-//        // Call the splitIntoBuckets function to quantize the image
-//        splitIntoBuckets(sampleImg, flattenedImgArray, 6);
-//
-//        // Save the quantized image
-//        File output = new File("girl_reduced_128_colors.jpg");
-//        ImageIO.write(sampleImg, "jpg", output);
-//    }
 
     public static void medianCutQuantize(BufferedImage img, List<int[]> imgArr) {
         // Calculate the average RGB values
@@ -137,7 +118,7 @@ public class MedianCutQuantization {
 
         // Sort the pixels based on the selected color space and find the median
         int finalSpaceWithHighestRange = spaceWithHighestRange;
-        imgArr.sort((p1, p2) -> Integer.compare(p1[finalSpaceWithHighestRange],p2[finalSpaceWithHighestRange]));
+        imgArr.sort((p1, p2) -> Integer.compare(p1[finalSpaceWithHighestRange], p2[finalSpaceWithHighestRange]));
         int medianIndex = imgArr.size() / 2;
 
         // Split into two buckets on either side of the median and recurse
