@@ -85,7 +85,7 @@ public class ImageEditor extends Application {
         Button quantizationButton2 = new Button("Uniform Algorithm");
         quantizationButton2.setOnAction(event -> {
             Pair<String, BufferedImage> image;
-            image = UniformColorQuantization.start(path);
+            image = UniformQuantization.start(path);
             String editedImage = image.getKey();
             editedBufferedImage = image.getValue();
             System.out.println("edited image path: " + editedImage);
