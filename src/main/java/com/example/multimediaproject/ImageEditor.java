@@ -5,7 +5,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -18,8 +17,16 @@ import javafx.scene.control.Label;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.SubScene;
+
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.ProgressBar;
+
 import java.awt.image.BufferedImage;
 import java.io.File;
+
 import java.util.Set;
 import java.util.HashSet;
 
@@ -27,21 +34,32 @@ public class ImageEditor extends Application {
 
     private ImageView originalImageView;
     private ImageView editedImageView;
+
     private Label originalImageInfoLabel;
     private Label editedImageInfoLabel;
-    private BufferedImage editedBufferedImage;
-    private String path;
+
+    private BufferedImage editedBufferedImage = null;
+
+    Controller controller = new Controller();
 
     public static void main(String[] args) {
         launch(args);
     }
+
+    // Declare the SubScene and Group
+    private SubScene colorPaletteSubScene;
+    private Group colorPaletteGroup;
+
+    private ProgressBar loadingIndicator; // Loading indicator component
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Image Editor");
 
         Button chooseImageButton = new Button("Choose Image");
-        chooseImageButton.setOnAction(actionEvent -> path = chooseImage(primaryStage));
+        chooseImageButton.setOnAction(actionEvent -> {
+            controller.path = chooseImage(primaryStage);
+        });
 
         originalImageView = new ImageView();
         originalImageView.setPreserveRatio(true);
@@ -69,58 +87,111 @@ public class ImageEditor extends Application {
         editedImageContainer.setSpacing(20);
         editedImageContainer.setPadding(new Insets(20));
 
-        Button quantizationButton1 = new Button("Popularity Algorithm");
+        Button quantizationButton1 = new Button("PopularityAlgorithm");
         quantizationButton1.setOnAction(event -> {
-            Pair<String, BufferedImage> image;
-            image = PopularityAlgo.start(path);
-            String editedImage = image.getKey();
-            editedBufferedImage = image.getValue();
-            System.out.println("edited image path: " + editedImage);
-            Image newImage = new Image(editedImage);
-            updateImageInfo(newImage, editedImageInfoLabel);
-            editedImageInfoLabel.setVisible(true);
-            editedImageView.setImage(newImage);
+            // Show the loading indicator
+            showLoadingIndicator();
+
+            // Execute the algorithm in a separate thread
+            Thread algorithmThread = new Thread(() -> {
+                long startTime = System.currentTimeMillis();
+                Pair<String, BufferedImage> image;
+                image = PopularityAlgo.start(controller.path);
+                long endTime = System.currentTimeMillis();
+                long executionTime = endTime - startTime;
+
+                String editedImage = image.getKey();
+                editedBufferedImage = image.getValue();
+
+                // Update the UI on the JavaFX application thread
+                javafx.application.Platform.runLater(() -> {
+                    Image newImage = new Image(editedImage);
+                    updateImageInfo(newImage, editedImageInfoLabel, executionTime);
+                    editedImageInfoLabel.setVisible(true);
+                    editedImageView.setImage(newImage);
+
+                    // Hide the loading indicator
+                    hideLoadingIndicator();
+                });
+            });
+            algorithmThread.start();
         });
 
-        Button quantizationButton2 = new Button("Uniform Algorithm");
+        Button quantizationButton2 = new Button("UniformAlgorithm");
         quantizationButton2.setOnAction(event -> {
-            Pair<String, BufferedImage> image;
-            image = UniformQuantization.start(path);
-            String editedImage = image.getKey();
-            editedBufferedImage = image.getValue();
-            System.out.println("edited image path: " + editedImage);
-            Image newImage = new Image(editedImage);
-            updateImageInfo(newImage, editedImageInfoLabel);
-            editedImageInfoLabel.setVisible(true);
-            editedImageView.setImage(new Image(editedImage));
+            // Show the loading indicator
+            showLoadingIndicator();
+
+            // Execute the algorithm in a separate thread
+            Thread algorithmThread = new Thread(() -> {
+                long startTime = System.currentTimeMillis();
+                Pair<String, BufferedImage> image;
+                image = UniformQuantization.start(controller.path);
+                long endTime = System.currentTimeMillis();
+                long executionTime = endTime - startTime;
+                String editedImage = image.getKey();
+                editedBufferedImage = image.getValue();
+
+                // Update the UI on the JavaFX application thread
+                javafx.application.Platform.runLater(() -> {
+                    Image newImage = new Image(editedImage);
+                    updateImageInfo(newImage, editedImageInfoLabel, executionTime);
+                    editedImageInfoLabel.setVisible(true);
+                    editedImageView.setImage(newImage);
+
+                    // Hide the loading indicator
+                    hideLoadingIndicator();
+                });
+            });
+            algorithmThread.start();
+
         });
 
-        Button quantizationButton3 = new Button("MedianCut Algorithm");
+        Button quantizationButton3 = new Button("MedianCutAlgorithm");
         quantizationButton3.setOnAction(event -> {
-            Pair<String, BufferedImage> image;
-            image = MedianCutQuantization.start(path);
-            String editedImage = image.getKey();
-            editedBufferedImage = image.getValue();
-            Image newImage = new Image(editedImage);
-            System.out.println("edited image path: " + editedImage);
-            updateImageInfo(newImage, editedImageInfoLabel);
-            editedImageInfoLabel.setVisible(true);
-            editedImageView.setImage(new Image(editedImage));
+            // Show the loading indicator
+            showLoadingIndicator();
+
+            // Execute the algorithm in a separate thread
+            Thread algorithmThread = new Thread(() -> {
+                long startTime = System.currentTimeMillis();
+                Pair<String, BufferedImage> image;
+                image = MedianCutQuantization.start(controller.path);
+                long endTime = System.currentTimeMillis();
+                long executionTime = endTime - startTime;
+                String editedImage = image.getKey();
+                editedBufferedImage = image.getValue();
+
+                // Update the UI on the JavaFX application thread
+                javafx.application.Platform.runLater(() -> {
+                    Image newImage = new Image(editedImage);
+                    updateImageInfo(newImage, editedImageInfoLabel, executionTime);
+                    editedImageInfoLabel.setVisible(true);
+                    editedImageView.setImage(newImage);
+
+                    // Hide the loading indicator
+                    hideLoadingIndicator();
+                });
+            });
+            algorithmThread.start();
+
         });
 
         Button colorPaletteButton = new Button("Color Palette");
         colorPaletteButton.setOnAction(event -> {
             if (editedBufferedImage != null) {
-                int[][][] histogram = Utils.buildHistogram(editedBufferedImage);
+                int[][][] histogram = PopularityAlgo.buildHistogram(editedBufferedImage);
                 showColorPalette(primaryStage, histogram);
             }
         });
         Button showHistogramButton = new Button("Histogram");
-        showHistogramButton.setOnAction(event -> showHistogram(primaryStage)
-        );
+        showHistogramButton.setOnAction(event -> {
+            showHistogram(primaryStage);
+        });
 
         VBox buttonContainer = new VBox(10);
-        buttonContainer.getChildren().addAll(chooseImageButton, quantizationButton1, quantizationButton2, quantizationButton3, colorPaletteButton, showHistogramButton);
+        buttonContainer.getChildren().addAll(quantizationButton1, quantizationButton2, quantizationButton3,
+                colorPaletteButton, showHistogramButton);
         buttonContainer.setAlignment(Pos.CENTER);
         buttonContainer.setPadding(new Insets(10));
 
@@ -134,19 +205,23 @@ public class ImageEditor extends Application {
 
         borderPane.setCenter(imageContainer);
 
-        // Create the color palette sub-scene
-        Group colorPaletteGroup = new Group();
-        SubScene colorPaletteSubScene = new SubScene(colorPaletteGroup, 400, 400);
+        // Create the color palette subscene
+        colorPaletteGroup = new Group();
+        colorPaletteSubScene = new SubScene(colorPaletteGroup, 400, 400);
         colorPaletteSubScene.setFill(Color.WHITE);
         colorPaletteSubScene.setManaged(false);
         colorPaletteSubScene.setVisible(false);
 
+        // Create the loading indicator
+        loadingIndicator = new ProgressBar();
+        loadingIndicator.setVisible(false);
+
         VBox root = new VBox(20);
-        root.getChildren().addAll(borderPane, colorPaletteSubScene);
+        root.getChildren().addAll(chooseImageButton, borderPane, colorPaletteSubScene, loadingIndicator);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(20));
 
-        Scene scene = new Scene(root, 1200, 600);
+        Scene scene = new Scene(root, 800, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -155,40 +230,101 @@ public class ImageEditor extends Application {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose an image file");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
-        );
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
 
         File selectedFile = fileChooser.showOpenDialog(primaryStage);
         if (selectedFile != null) {
             String imagePath = selectedFile.toURI().toString();
-            System.out.println("original image path: " + imagePath);
+            System.out.println("theee pathhhh :" + imagePath);
             Image image = new Image(imagePath);
             originalImageView.setImage(image);
             originalImageInfoLabel.setVisible(true);
-            updateImageInfo(image, originalImageInfoLabel);
+            updateImageInfo(image, originalImageInfoLabel, -1);
             editedImageView.setImage(null);
-            editedImageInfoLabel.setText("");
             return selectedFile.getAbsolutePath();
         }
         return "No File Chosen";
     }
 
-    private void updateImageInfo(Image image, Label label) {
+    private void showHistogram(Stage primaryStage) {
+        if (editedBufferedImage != null) {
+            int[][][] histogram = PopularityAlgo.buildHistogram(editedBufferedImage);
+            displayHistogramChart(primaryStage, histogram);
+        }
+    }
+
+    private void displayHistogramChart(Stage primaryStage, int[][][] histogram) {
+        Stage chartStage = new Stage();
+        chartStage.initOwner(primaryStage);
+        chartStage.setTitle("Histogram Chart");
+
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        BarChart<String, Number> histogramChart = new BarChart<>(xAxis, yAxis);
+        histogramChart.setTitle("Color Histogram");
+        xAxis.setLabel("Color");
+        yAxis.setLabel("Count");
+
+        XYChart.Series<String, Number> redSeries = new XYChart.Series<>();
+        redSeries.setName("Red");
+        XYChart.Series<String, Number> greenSeries = new XYChart.Series<>();
+        greenSeries.setName("Green");
+        XYChart.Series<String, Number> blueSeries = new XYChart.Series<>();
+        blueSeries.setName("Blue");
+
+        for (int r = 0; r < histogram.length; r++) {
+            for (int g = 0; g < histogram[r].length; g++) {
+                for (int b = 0; b < histogram[r][g].length; b++) {
+                    int count = histogram[r][g][b];
+                    if (count > 0) {
+                        String colorLabel = String.format("#%02X%02X%02X", r, g, b);
+                        redSeries.getData().add(new XYChart.Data<>(colorLabel, count));
+                        greenSeries.getData().add(new XYChart.Data<>(colorLabel, count));
+                        blueSeries.getData().add(new XYChart.Data<>(colorLabel, count));
+                    }
+                }
+            }
+        }
+
+        histogramChart.getData().addAll(redSeries, greenSeries, blueSeries);
+
+        Scene chartScene = new Scene(histogramChart, 800, 600);
+        chartStage.setScene(chartScene);
+        chartStage.show();
+    }
+
+    private void updateImageInfo(Image image, Label label, long executionTime) {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
 
         // Get the size of the image in kilobytes or megabytes
         String imageSize = getImageSize(image);
 
         // Get the number of colors in the image
         int numColors = getImageColorCount(image);
+        String imageInfo;
+        if (executionTime == -1) {
+            imageInfo = "Image Size: " + imageSize + "  ,Number Of Colors: " + numColors;
+        } else {
+            imageInfo = "Image Size: " + imageSize + "  ,Number Of Colors: " + numColors + "\nExecution Time: "
+                    + executionTime + " ms";
+        }
 
-        String imageInfo = "Image Size: " + imageSize + ", Number Of Colors: " + numColors;
         System.out.println(imageInfo);
         label.setText(imageInfo);
     }
 
+    private void showLoadingIndicator() {
+        loadingIndicator.setVisible(true);
+    }
+
+    private void hideLoadingIndicator() {
+        loadingIndicator.setVisible(false);
+    }
+
     private String getImageSize(Image image) {
         try {
-            File file;
+            File file = null;
             String imageUrl = image.getUrl();
             if (imageUrl.startsWith("file:/")) {
                 file = new File(imageUrl.substring(5)); // Remove "file:" from the URL
@@ -226,6 +362,7 @@ public class ImageEditor extends Application {
                 }
             }
         }
+
         return uniqueColors.size();
     }
 
@@ -251,76 +388,24 @@ public class ImageEditor extends Application {
                     int count = histogram[r][g][b];
                     if (count > 0) {
                         Color color = Color.rgb(r, g, b);
-                        Rectangle colorBox = createColorBox(color);
+                        Rectangle colorBox = createColorBox(color, 20);
                         root.getChildren().add(colorBox);
                     }
                 }
             }
         }
 
-        Scene scene = new Scene(root, 450, 200);
+        Scene scene = new Scene(root);
         colorPaletteStage.setTitle("Color Palette");
         colorPaletteStage.setScene(scene);
         colorPaletteStage.show();
     }
 
-    private Rectangle createColorBox(Color color) {
-        Rectangle colorBox = new Rectangle(20, 20);
+    private Rectangle createColorBox(Color color, double size) {
+        Rectangle colorBox = new Rectangle(size, size);
         colorBox.setFill(color);
         colorBox.setStroke(Color.BLACK);
         colorBox.setStrokeWidth(1);
         return colorBox;
     }
-
-    private void showHistogram(Stage primaryStage) {
-        if (editedBufferedImage != null) {
-            int[][][] histogram = Utils.buildHistogram(editedBufferedImage);
-            displayHistogramChart(primaryStage, histogram);
-        }
-    }
-
-    private void displayHistogramChart(Stage primaryStage, int[][][] histogram) {
-
-        NumberAxis xAxis = new NumberAxis(0,260,5);
-        xAxis.setLabel("Color Values");
-        NumberAxis yAxis = new NumberAxis();
-        yAxis.setLabel("Pixels Number");
-
-        LineChart<Number, Number> charts = new LineChart<>(xAxis, yAxis);
-        charts.setCreateSymbols(false);
-        charts.setTitle("Color Histogram");
-        XYChart.Series<Number, Number> redSeries = new XYChart.Series<>();
-        XYChart.Series<Number, Number> greenSeries = new XYChart.Series<>();
-        XYChart.Series<Number, Number> blueSeries = new XYChart.Series<>();
-
-        for (int r = 0; r < histogram.length; r++) {
-            for (int g = 0; g < histogram[r].length; g++) {
-                for (int b = 0; b < histogram[r][g].length; b++) {
-                    int count = histogram[r][g][b];
-                    if (count > 0) {
-                        redSeries.getData().add(new XYChart.Data<>(r, count));
-                        greenSeries.getData().add(new XYChart.Data<>(g, count));
-                        blueSeries.getData().add(new XYChart.Data<>(b, count));
-                    }
-                }
-            }
-        }
-
-        charts.getData().add(redSeries);
-        charts.getData().add(greenSeries);
-        charts.getData().add(blueSeries);
-        charts.setLegendVisible(false);
-        redSeries.getNode().setStyle("-fx-stroke: #ff0000;");
-        greenSeries.getNode().setStyle("-fx-stroke: #00ff00; color: green;");
-        blueSeries.getNode().setStyle("-fx-stroke: #0000ff; color: blue;");
-
-        Stage chartStage = new Stage();
-        chartStage.initOwner(primaryStage);
-        chartStage.setTitle("Histogram Chart");
-        Scene chartScene = new Scene(charts, 800, 600);
-        chartStage.setScene(chartScene);
-        chartStage.show();
-
-    }
-
 }
