@@ -22,7 +22,6 @@ public class PopularityAlgo {
 
             //remove .jpg
             path = path.substring(0,path.length()-4);
-
             // Convert the quantized image to indexed
             int[][][] hist = Utils.buildHistogram(quantizedImage);
             int[] colors = Utils.transformIntoIntColors(hist);
@@ -73,7 +72,6 @@ public class PopularityAlgo {
         int depth = histogram[0][0].length;
 
         Color[] dominantColors = new Color[numColors];
-        int[] maxFrequencies = new int[numColors];
 
         for (int i = 0; i < numColors; i++) {
             int maxFrequency = 0;
@@ -95,7 +93,6 @@ public class PopularityAlgo {
             }
 
             dominantColors[i] = new Color(maxR, maxG, maxB);
-            maxFrequencies[i] = maxFrequency;
 
             // Set the max frequency to 0 so that the next iteration finds the next most frequent color
             histogram[maxR][maxG][maxB] = 0;
@@ -108,7 +105,7 @@ public class PopularityAlgo {
         Color closestColor = colors[0];
         double minDistance = calculateColorDistance(targetColor, closestColor);
 
-        double distance = 0;
+        double distance;
         for (int i = 1; i < colors.length; i++) {
             distance = calculateColorDistance(targetColor, colors[i]);
 

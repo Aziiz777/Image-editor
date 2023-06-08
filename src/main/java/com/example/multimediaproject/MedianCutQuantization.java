@@ -2,7 +2,7 @@ package com.example.multimediaproject;
 
 import javafx.util.Pair;
 
-
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.IndexColorModel;
@@ -23,10 +23,10 @@ public class MedianCutQuantization {
             List<int[]> flattenedImgArray = new ArrayList<>();
             for (int rIndex = 0; rIndex < image.getHeight(); rIndex++) {
                 for (int cIndex = 0; cIndex < image.getWidth(); cIndex++) {
-                    int color = image.getRGB(cIndex, rIndex);
-                    int r = (color & 0xff0000) >> 16;
-                    int g = (color & 0x00ff00) >> 8;
-                    int b = (color & 0x0000ff);
+                    Color color = new Color(image.getRGB(cIndex, rIndex));
+                    int r = color.getRed();
+                    int g = color.getGreen();
+                    int b = color.getBlue();
                     flattenedImgArray.add(new int[]{r, g, b, rIndex, cIndex});
                 }
             }
@@ -54,26 +54,6 @@ public class MedianCutQuantization {
         } catch (IOException e) {
             e.printStackTrace();
             return new Pair<>("Quantization failed.", null);
-        }
-    }
-
-    public static void medianCutQuantize(BufferedImage img, List<int[]> imgArr) {
-        // Calculate the average RGB values
-        double rAvg = 0;
-        double gAvg = 0;
-        double bAvg = 0;
-        for (int[] pixel : imgArr) {
-            rAvg += pixel[0];
-            gAvg += pixel[1];
-            bAvg += pixel[2];
-        }
-        rAvg /= imgArr.size();
-        gAvg /= imgArr.size();
-        bAvg /= imgArr.size();
-
-        // Set all pixels in the image to the average RGB value
-        for (int[] pixel : imgArr) {
-            img.setRGB(pixel[4], pixel[3], ((int) rAvg << 16) | ((int) gAvg << 8) | (int) bAvg);
         }
     }
 
@@ -108,13 +88,13 @@ public class MedianCutQuantization {
         int bRange = bMax - bMin;
 
         // Determine which color space to split on (the one with the largest range)
-        int spaceWithHighestRange = 0;
-        if (gRange >= rRange && gRange >= bRange) {
-            spaceWithHighestRange = 1;
-        } else if (bRange >= rRange && bRange >= gRange) {
-            spaceWithHighestRange = 2;
-        } else if (rRange >= bRange && rRange >= gRange) {
+        int spaceWithHighestRange = Math.max(Math.max(rRange, gRange), bRange);
+        if(spaceWithHighestRange == rRange){
             spaceWithHighestRange = 0;
+        }else if(spaceWithHighestRange == gRange){
+            spaceWithHighestRange = 1;
+        }else {
+            spaceWithHighestRange = 2;
         }
 
         // Sort the pixels based on the selected color space and find the median
@@ -127,5 +107,25 @@ public class MedianCutQuantization {
         List<int[]> imgArr2 = imgArr.subList(medianIndex, imgArr.size());
         splitIntoBuckets(img, imgArr1, depth - 1);
         splitIntoBuckets(img, imgArr2, depth - 1);
+    }
+
+    public static void medianCutQuantize(BufferedImage img, List<int[]> imgArr) {
+        // Calculate the average RGB values
+        double rAvg = 0;
+        double gAvg = 0;
+        double bAvg = 0;
+        for (int[] pixel : imgArr) {
+            rAvg += pixel[0];
+            gAvg += pixel[1];
+            bAvg += pixel[2];
+        }
+        rAvg /= imgArr.size();
+        gAvg /= imgArr.size();
+        bAvg /= imgArr.size();
+
+        // Set all pixels in the image to the average RGB value
+        for (int[] pixel : imgArr) {
+            img.setRGB(pixel[4], pixel[3], ((int) rAvg << 16) | ((int) gAvg << 8) | (int) bAvg);
+        }
     }
 }
